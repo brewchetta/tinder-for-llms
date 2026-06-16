@@ -1,0 +1,149 @@
+// Prisma schema for "Tinder for AI Models".
+// Local dev uses SQLite; migrate to Supabase (Postgres) by switching the
+// datasource `provider` to "postgresql" and pointing the URLs at Supabase.
+//
+// NOTE: SQLite does not support Prisma `enum`, so `Swipe.direction` and
+// `Feature.category` are modeled as String here (allowed values documented
+// inline). On Postgres these can become real enums.
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Regenerates prisma/dbml/schema.dbml on every `prisma generate`.
+generator dbml {
+  provider   = "prisma-dbml-generator"
+  output     = "./dbml"
+  outputName = "schema.dbml"
+}
+
+// ─── Auth.js (NextAuth) standard models ──────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+
+  accounts    Account[]
+  sessions    Session[]
+  swipes      Swipe[]
+  preferences UserPreference[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── Domain models ───────────────────────────────────────────────────────────
+
+/// A swipeable LLM "card".
+model AiModel {
+  id              String    @id @default(cuid())
+  slug            String    @unique
+  name            String
+  provider        String
+  tagline         String?
+  description     String?
+  avatarUrl       String?
+  contextWindow   Int?
+  inputPricePerM  Float?
+  outputPricePerM Float?
+  releaseDate     DateTime?
+  createdAt       DateTime  @default(now())
+
+  features AiModelFeature[]
+  swipes   Swipe[]
+}
+
+/// A normalized capability used both to describe models and to match user prefs.
+model Feature {
+  id    String @id @default(cuid())
+  key   String @unique
+  label String
+  /// Category enum (Postgres): MODALITY | CAPABILITY | DEPLOYMENT | PRICING | CONTEXT
+  category String
+
+  models      AiModelFeature[]
+  preferences UserPreference[]
+}
+
+/// Join: which features a given model has.
+model AiModelFeature {
+  aiModelId String
+  featureId String
+  /// Optional graded value, e.g. a context-size bucket.
+  value     String?
+
+  aiModel AiModel @relation(fields: [aiModelId], references: [id], onDelete: Cascade)
+  feature Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@id([aiModelId, featureId])
+}
+
+/// Source of truth for swipe decisions. A RIGHT swipe is a "match".
+model Swipe {
+  id        String   @id @default(cuid())
+  userId    String
+  aiModelId String
+  /// Direction enum (Postgres): LEFT | RIGHT
+  direction String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  aiModel AiModel @relation(fields: [aiModelId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, aiModelId])
+}
+
+/// Phase 2: a user's desired features (for preference-matching on cards).
+model UserPreference {
+  id         String @id @default(cuid())
+  userId     String
+  featureId  String
+  importance Int?
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  feature Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, featureId])
+}

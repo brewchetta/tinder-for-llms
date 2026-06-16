@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Environment & secrets
+.env
+.env.local
+
+# Local databases
+*.db
+*.db-journal
+
+# Prisma generated client
+prisma/generated/
+
+# Next.js (once scaffolded)
+.next/
+out/
+dist/
+
+# Logs / OS
+*.log
+.DS_Store

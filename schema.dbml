@@ -1,0 +1,138 @@
+// ─────────────────────────────────────────────────────────────
+// Tinder for AI Models — schema for https://dbdiagram.io
+// Copy/paste this whole file into the dbdiagram.io editor.
+// ─────────────────────────────────────────────────────────────
+
+Enum swipe_direction {
+  LEFT
+  RIGHT
+}
+
+Enum feature_category {
+  MODALITY
+  CAPABILITY
+  DEPLOYMENT
+  PRICING
+  CONTEXT
+}
+
+// ── Auth.js (NextAuth) standard tables ───────────────────────
+
+Table users {
+  id            text [pk]
+  name          text
+  email         text [unique, not null]
+  emailVerified timestamp
+  image         text
+  createdAt     timestamp [not null, default: `now()`]
+}
+
+Table accounts {
+  id                text [pk]
+  userId            text [not null]
+  type              text [not null]
+  provider          text [not null]
+  providerAccountId text [not null]
+  refresh_token     text
+  access_token      text
+  expires_at        integer
+  token_type        text
+  scope             text
+  id_token          text
+  session_state     text
+
+  Indexes {
+    (provider, providerAccountId) [unique]
+  }
+}
+
+Table sessions {
+  id           text [pk]
+  sessionToken text [unique, not null]
+  userId       text [not null]
+  expires      timestamp [not null]
+}
+
+Table verification_tokens {
+  identifier text [not null]
+  token      text [unique, not null]
+  expires    timestamp [not null]
+
+  Indexes {
+    (identifier, token) [unique]
+  }
+}
+
+// ── Domain tables ────────────────────────────────────────────
+
+Table ai_models {
+  id             text [pk]
+  slug           text [unique, not null]
+  name           text [not null]
+  provider       text [not null]
+  tagline        text
+  description    text
+  avatarUrl      text
+  contextWindow  integer
+  inputPricePerM decimal
+  outputPricePerM decimal
+  releaseDate    date
+  createdAt      timestamp [not null, default: `now()`]
+}
+
+Table features {
+  id       text [pk]
+  key      text [unique, not null]
+  label    text [not null]
+  category feature_category [not null]
+}
+
+// Join: which features a model has (AiModel N–M Feature)
+Table ai_model_features {
+  aiModelId text [not null]
+  featureId text [not null]
+  value     text // optional graded value, e.g. context-size bucket
+
+  Indexes {
+    (aiModelId, featureId) [pk]
+  }
+}
+
+// Source of truth for left/right decisions. Matches = direction = RIGHT.
+Table swipes {
+  id        text [pk]
+  userId    text [not null]
+  aiModelId text [not null]
+  direction swipe_direction [not null]
+  createdAt timestamp [not null, default: `now()`]
+
+  Indexes {
+    (userId, aiModelId) [unique] // one decision per user per model
+  }
+}
+
+// Phase 2: a user's desired features (User N–M Feature)
+Table user_preferences {
+  id         text [pk]
+  userId     text [not null]
+  featureId  text [not null]
+  importance integer
+
+  Indexes {
+    (userId, featureId) [unique]
+  }
+}
+
+// ── Relationships ────────────────────────────────────────────
+
+Ref: accounts.userId > users.id [delete: cascade]
+Ref: sessions.userId > users.id [delete: cascade]
+
+Ref: ai_model_features.aiModelId > ai_models.id [delete: cascade]
+Ref: ai_model_features.featureId > features.id [delete: cascade]
+
+Ref: swipes.userId    > users.id     [delete: cascade]
+Ref: swipes.aiModelId > ai_models.id [delete: cascade]
+
+Ref: user_preferences.userId    > users.id    [delete: cascade]
+Ref: user_preferences.featureId > features.id [delete: cascade]

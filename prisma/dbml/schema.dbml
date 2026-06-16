@@ -1,0 +1,145 @@
+//// ------------------------------------------------------
+//// THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+//// ------------------------------------------------------
+
+Table User {
+  id String [pk]
+  name String
+  email String [unique]
+  emailVerified DateTime
+  image String
+  createdAt DateTime [default: `now()`, not null]
+  accounts Account [not null]
+  sessions Session [not null]
+  swipes Swipe [not null]
+  preferences UserPreference [not null]
+}
+
+Table Account {
+  id String [pk]
+  userId String [not null]
+  type String [not null]
+  provider String [not null]
+  providerAccountId String [not null]
+  refresh_token String
+  access_token String
+  expires_at Int
+  token_type String
+  scope String
+  id_token String
+  session_state String
+  user User [not null]
+
+  indexes {
+    (provider, providerAccountId) [unique]
+  }
+}
+
+Table Session {
+  id String [pk]
+  sessionToken String [unique, not null]
+  userId String [not null]
+  expires DateTime [not null]
+  user User [not null]
+}
+
+Table VerificationToken {
+  identifier String [not null]
+  token String [unique, not null]
+  expires DateTime [not null]
+
+  indexes {
+    (identifier, token) [unique]
+  }
+}
+
+Table AiModel {
+  id String [pk]
+  slug String [unique, not null]
+  name String [not null]
+  provider String [not null]
+  tagline String
+  description String
+  avatarUrl String
+  contextWindow Int
+  inputPricePerM Float
+  outputPricePerM Float
+  releaseDate DateTime
+  createdAt DateTime [default: `now()`, not null]
+  features AiModelFeature [not null]
+  swipes Swipe [not null]
+
+  Note: 'A swipeable LLM "card".'
+}
+
+Table Feature {
+  id String [pk]
+  key String [unique, not null]
+  label String [not null]
+  category String [not null, note: 'Category enum (Postgres): MODALITY | CAPABILITY | DEPLOYMENT | PRICING | CONTEXT']
+  models AiModelFeature [not null]
+  preferences UserPreference [not null]
+
+  Note: 'A normalized capability used both to describe models and to match user prefs.'
+}
+
+Table AiModelFeature {
+  aiModelId String [not null]
+  featureId String [not null]
+  value String [note: 'Optional graded value, e.g. a context-size bucket.']
+  aiModel AiModel [not null]
+  feature Feature [not null]
+
+  indexes {
+    (aiModelId, featureId) [pk]
+  }
+
+  Note: 'Join: which features a given model has.'
+}
+
+Table Swipe {
+  id String [pk]
+  userId String [not null]
+  aiModelId String [not null]
+  direction String [not null, note: 'Direction enum (Postgres): LEFT | RIGHT']
+  createdAt DateTime [default: `now()`, not null]
+  user User [not null]
+  aiModel AiModel [not null]
+
+  indexes {
+    (userId, aiModelId) [unique]
+  }
+
+  Note: 'Source of truth for swipe decisions. A RIGHT swipe is a "match".'
+}
+
+Table UserPreference {
+  id String [pk]
+  userId String [not null]
+  featureId String [not null]
+  importance Int
+  user User [not null]
+  feature Feature [not null]
+
+  indexes {
+    (userId, featureId) [unique]
+  }
+
+  Note: 'Phase 2: a user\'s desired features (for preference-matching on cards).'
+}
+
+Ref: Account.userId > User.id [delete: Cascade]
+
+Ref: Session.userId > User.id [delete: Cascade]
+
+Ref: AiModelFeature.aiModelId > AiModel.id [delete: Cascade]
+
+Ref: AiModelFeature.featureId > Feature.id [delete: Cascade]
+
+Ref: Swipe.userId > User.id [delete: Cascade]
+
+Ref: Swipe.aiModelId > AiModel.id [delete: Cascade]
+
+Ref: UserPreference.userId > User.id [delete: Cascade]
+
+Ref: UserPreference.featureId > Feature.id [delete: Cascade]
