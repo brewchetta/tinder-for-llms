@@ -13,9 +13,11 @@ A Tinder-style app where users swipe through **LLM models** (cards) instead of p
 - **ORM**: Prisma 5
 - **Database**: **Supabase (Postgres)** in all environments. `DATABASE_URL` = pooled
   (PgBouncer :6543); `DIRECT_URL` = direct (:5432) for migrations. See `SUPABASE.md`.
-- **Auth**: Auth.js (NextAuth v5) with Prisma adapter. Local dev uses a passwordless
-  "dev login" (Credentials + JWT sessions) — enter any email to sign in as that user.
-  Swap in GitHub/Google OAuth in `lib/auth.ts` for production (adapter already wired).
+- **Auth**: Auth.js (NextAuth v5) with Prisma adapter, JWT sessions.
+  - **Google OAuth** — enabled when `AUTH_GOOGLE_ID`/`AUTH_GOOGLE_SECRET` are set
+    (see `GOOGLE_OAUTH.md`).
+  - **Dev login** — passwordless Credentials provider (enter any email) for local use
+    with zero setup. Both providers coexist; remove the dev login for production.
 - **Model catalog**: seeded static list of real LLMs (`prisma/seed.ts`)
 
 > ⚠️ Next.js 16 + Tailwind v4 differ from older conventions (see `AGENTS.md`). Before

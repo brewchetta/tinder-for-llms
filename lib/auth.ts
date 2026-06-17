@@ -1,20 +1,27 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import Google from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 
 /**
+ * Google OAuth is enabled only when its credentials are present, so the app still
+ * runs locally without them. Set AUTH_GOOGLE_ID / AUTH_GOOGLE_SECRET in .env to
+ * turn it on (see GOOGLE_OAUTH.md). The sign-in page reads this to show the button.
+ */
+export const googleEnabled =
+  !!process.env.AUTH_GOOGLE_ID && !!process.env.AUTH_GOOGLE_SECRET;
+
+/**
  * Auth.js (NextAuth v5) configuration.
  *
- * For local development we use a passwordless "dev login": enter any email and
- * you're signed in as that user (created on first use). This keeps the app
- * runnable with zero external setup while still being real, multi-user, session
- * -backed auth — swipes/matches are tied to a persisted User row.
+ * Providers:
+ *  - Google OAuth (when AUTH_GOOGLE_ID/SECRET are set) — production sign-in.
+ *  - A passwordless "dev login" (enter any email → user created on first use) so
+ *    the app stays runnable locally with zero setup.
  *
- * To move to production auth, add an OAuth provider (e.g. GitHub/Google) or the
- * Email provider to the `providers` array. The Prisma adapter below is already
- * wired so OAuth account/session persistence works without further changes.
- * (Credentials requires the JWT session strategy, which is why it's set here.)
+ * Both persist to the DB via the Prisma adapter. Credentials requires the JWT
+ * session strategy, so we use JWT for everything (one session shape for both).
  */
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -22,6 +29,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
   pages: { signIn: "/sign-in" },
   providers: [
+    // allowDangerousEmailAccountLinking links a Google sign-in to an existing user
+    // with the same email (e.g. one made via the dev login). Safe here since we
+    // trust Google-verified emails; remove it if you require explicit linking.
+    ...(googleEnabled
+      ? [Google({ allowDangerousEmailAccountLinking: true })]
+      : []),
     Credentials({
       name: "Dev login",
       credentials: {
