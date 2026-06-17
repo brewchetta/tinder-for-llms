@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Nav } from "@/components/Nav";
+import { WeatherWidget } from "@/components/WeatherWidget";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,6 +31,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <Nav />
+        <WeatherWidget />
         <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 py-8">
           {children}
         </main>
