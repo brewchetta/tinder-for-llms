@@ -1,14 +1,12 @@
 // Prisma schema for "Tinder for AI Models".
-// Local dev uses SQLite; migrate to Supabase (Postgres) by switching the
-// datasource `provider` to "postgresql" and pointing the URLs at Supabase.
-//
-// NOTE: SQLite does not support Prisma `enum`, so `Swipe.direction` and
-// `Feature.category` are modeled as String here (allowed values documented
-// inline). On Postgres these can become real enums.
+// Postgres (Supabase) in all environments.
+//   DATABASE_URL — pooled connection (PgBouncer, port 6543), used by the app.
+//   DIRECT_URL   — direct connection (port 5432), used by Prisma Migrate.
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 generator client {
@@ -20,6 +18,19 @@ generator dbml {
   provider   = "prisma-dbml-generator"
   output     = "./dbml"
   outputName = "schema.dbml"
+}
+
+enum SwipeDirection {
+  LEFT
+  RIGHT
+}
+
+enum FeatureCategory {
+  MODALITY
+  CAPABILITY
+  DEPLOYMENT
+  PRICING
+  CONTEXT
 }
 
 // ─── Auth.js (NextAuth) standard models ──────────────────────────────────────
@@ -98,10 +109,9 @@ model AiModel {
 /// A normalized capability used both to describe models and to match user prefs.
 model Feature {
   id    String @id @default(cuid())
-  key   String @unique
-  label String
-  /// Category enum (Postgres): MODALITY | CAPABILITY | DEPLOYMENT | PRICING | CONTEXT
-  category String
+  key      String @unique
+  label    String
+  category FeatureCategory
 
   models      AiModelFeature[]
   preferences UserPreference[]
@@ -125,8 +135,7 @@ model Swipe {
   id        String   @id @default(cuid())
   userId    String
   aiModelId String
-  /// Direction enum (Postgres): LEFT | RIGHT
-  direction String
+  direction SwipeDirection
   createdAt DateTime @default(now())
 
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)

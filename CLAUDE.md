@@ -11,7 +11,8 @@ A Tinder-style app where users swipe through **LLM models** (cards) instead of p
 - **Framework**: Next.js 16 (App Router, Turbopack) + TypeScript + React 19
 - **Styling/Gestures**: Tailwind CSS v4 (CSS-first, no `tailwind.config`) + framer-motion (drag-to-swipe)
 - **ORM**: Prisma 5
-- **Database**: SQLite locally → **Supabase (Postgres)** in production
+- **Database**: **Supabase (Postgres)** in all environments. `DATABASE_URL` = pooled
+  (PgBouncer :6543); `DIRECT_URL` = direct (:5432) for migrations. See `SUPABASE.md`.
 - **Auth**: Auth.js (NextAuth v5) with Prisma adapter. Local dev uses a passwordless
   "dev login" (Credentials + JWT sessions) — enter any email to sign in as that user.
   Swap in GitHub/Google OAuth in `lib/auth.ts` for production (adapter already wired).
@@ -56,10 +57,11 @@ Auth.js tables: `User`, `Account`, `Session`, `VerificationToken`.
 - **Feature** — normalized capability (`key`, `label`, `category`:
   MODALITY|CAPABILITY|DEPLOYMENT|PRICING|CONTEXT).
 - **AiModelFeature** — join table (AiModel ↔ Feature), composite PK.
-- **Swipe** — `userId`, `aiModelId`, `direction` (LEFT|RIGHT), unique per (user, model).
+- **Swipe** — `userId`, `aiModelId`, `direction` (enum SwipeDirection), unique per (user, model).
   Right swipes are the user's matches.
 - **UserPreference** *(phase 2)* — `userId`, `featureId`, `importance`; unique per (user, feature).
-- Enum **SwipeDirection** { LEFT, RIGHT }.
+- Enums **SwipeDirection** { LEFT, RIGHT } and **FeatureCategory**
+  { MODALITY, CAPABILITY, DEPLOYMENT, PRICING, CONTEXT } — real Postgres enums.
 
 ## Conventions
 - TypeScript strict mode.
@@ -69,10 +71,11 @@ Auth.js tables: `User`, `Account`, `Session`, `VerificationToken`.
 
 ## Running locally
 1. `npm install`
-2. `npx prisma migrate dev` — create/sync the SQLite DB (already done once as `init`)
-3. `npm run db:seed` — load the LLM catalog (9 models, 16 features)
-4. `npm run dev` → http://localhost:3000 — sign in with any email
-   - `.env` needs `DATABASE_URL` and `AUTH_SECRET` (both already set for local).
+2. Create a Supabase project and copy `.env.example` → `.env`, filling in `DATABASE_URL`,
+   `DIRECT_URL`, `AUTH_SECRET` (full walkthrough in `SUPABASE.md`).
+3. `npx prisma migrate deploy` — apply the migrations to your Postgres DB
+4. `npm run db:seed` — load the LLM catalog (9 models, 16 features)
+5. `npm run dev` → http://localhost:3000 — sign in with any email
 
 ## Commands
 - `npm run dev` / `npm run build` / `npm start` — Next.js
@@ -83,31 +86,25 @@ Auth.js tables: `User`, `Account`, `Session`, `VerificationToken`.
 - `/schema` (Claude Code) — open the schema as an interactive ER diagram in the browser
 
 ## Schema diagram (DBML)
-The DB schema can be viewed as a dbdiagram.io-style interactive diagram via the
-`mcp-schema-viewer/` tooling (an MCP server + a standalone launcher). Run `/schema`
-in Claude Code, or `node mcp-schema-viewer/src/serve.js [path]` directly.
+View the schema as a dbdiagram.io-style interactive diagram. The `schema-viewer` tooling
+is installed **globally** (`~/.claude/mcp-servers/schema-viewer`) and exposed as the
+`/schema` command — run `/schema` (curated file) or `/schema prisma/dbml/schema.dbml`
+(generated). Both now render enum boxes for `SwipeDirection` / `FeatureCategory`.
 
 Two DBML files exist on purpose:
-- **`schema.dbml`** (root) — hand-curated design reference; includes real enums
-  (`swipe_direction`, `feature_category`) as enum boxes. This is what `/schema` shows by default.
+- **`schema.dbml`** (root) — hand-curated design reference; what `/schema` shows by default.
 - **`prisma/dbml/schema.dbml`** — **generated** from `prisma/schema.prisma` by
-  `prisma-dbml-generator` on every `prisma generate`. View it with
-  `/schema prisma/dbml/schema.dbml`.
+  `prisma-dbml-generator` on every `prisma generate`.
 
-**Enum caveat**: Prisma + SQLite does not support `enum`, so in `prisma/schema.prisma`
-`Swipe.direction` and `Feature.category` are `String` (allowed values documented inline).
-On the Supabase/Postgres migration these become real Prisma/Postgres enums, and the
-generated diagram will then show enum boxes too.
-
-## Supabase Migration (when ready)
-1. Prisma datasource `provider`: sqlite → postgresql.
-2. Set `DATABASE_URL` (pooled :6543) + `DIRECT_URL` (:5432).
-3. `prisma migrate deploy`, then re-seed.
-4. Optional: enable RLS scoping `Swipe`/`UserPreference` to `auth.uid()`.
+## Supabase Migration
+The codebase is migrated to Postgres (provider `postgresql`, real enums, pooled +
+direct URLs, Postgres init migration in `prisma/migrations/`). To stand up a database,
+follow **`SUPABASE.md`** (create project → fill `.env` → `prisma migrate deploy` → seed).
+RLS is deferred; every query is already scoped to the session user via Prisma.
 
 ## Roadmap
 1. ✅ Scaffold Next.js + Prisma + Auth.js; schema + seed.
 2. ✅ Swipe deck UI + record swipes.
 3. ✅ Matches list (with unmatch).
 4. ✅ Phase 2: user preferences + per-card preference highlighting.
-5. Migrate to Supabase.
+5. 🔄 Migrate to Supabase — code migrated to Postgres; run `SUPABASE.md` to deploy a DB.

@@ -76,7 +76,7 @@ Table Feature {
   id String [pk]
   key String [unique, not null]
   label String [not null]
-  category String [not null, note: 'Category enum (Postgres): MODALITY | CAPABILITY | DEPLOYMENT | PRICING | CONTEXT']
+  category FeatureCategory [not null]
   models AiModelFeature [not null]
   preferences UserPreference [not null]
 
@@ -101,7 +101,7 @@ Table Swipe {
   id String [pk]
   userId String [not null]
   aiModelId String [not null]
-  direction String [not null, note: 'Direction enum (Postgres): LEFT | RIGHT']
+  direction SwipeDirection [not null]
   createdAt DateTime [default: `now()`, not null]
   user User [not null]
   aiModel AiModel [not null]
@@ -126,6 +126,19 @@ Table UserPreference {
   }
 
   Note: 'Phase 2: a user\'s desired features (for preference-matching on cards).'
+}
+
+Enum SwipeDirection {
+  LEFT
+  RIGHT
+}
+
+Enum FeatureCategory {
+  MODALITY
+  CAPABILITY
+  DEPLOYMENT
+  PRICING
+  CONTEXT
 }
 
 Ref: Account.userId > User.id [delete: Cascade]

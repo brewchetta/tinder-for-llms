@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, FeatureCategory } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
  * MODALITY | CAPABILITY | DEPLOYMENT | PRICING | CONTEXT.
  */
 
-const FEATURES: { key: string; label: string; category: string }[] = [
+const FEATURES: { key: string; label: string; category: FeatureCategory }[] = [
   // Modalities
   { key: "text", label: "Text", category: "MODALITY" },
   { key: "vision", label: "Vision", category: "MODALITY" },
