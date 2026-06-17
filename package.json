@@ -5,7 +5,8 @@
   "description": "Tinder-style app for swiping LLM models based on their feature sets.",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
+    "postinstall": "prisma generate",
     "start": "next start",
     "lint": "eslint",
     "db:dbml": "prisma generate",
