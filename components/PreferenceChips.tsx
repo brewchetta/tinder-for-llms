@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { togglePreference } from "@/app/actions/preferences";
+import { groupFeaturesByCategory } from "@/lib/models";
 
 export type PrefFeature = {
   id: string;
@@ -9,14 +10,6 @@ export type PrefFeature = {
   label: string;
   category: string;
 };
-
-const CATEGORY_ORDER = [
-  "MODALITY",
-  "CAPABILITY",
-  "CONTEXT",
-  "DEPLOYMENT",
-  "PRICING",
-] as const;
 
 const CATEGORY_TITLES: Record<string, string> = {
   MODALITY: "Modalities",
@@ -61,10 +54,7 @@ export function PreferenceChips({
     });
   }
 
-  const grouped = CATEGORY_ORDER.map((category) => ({
-    category,
-    items: features.filter((f) => f.category === category),
-  })).filter((g) => g.items.length > 0);
+  const grouped = groupFeaturesByCategory(features);
 
   return (
     <div className="flex flex-col gap-6">
