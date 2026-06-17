@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { unmatch } from "@/app/actions/swipe";
+import { countPreferenceMatches, preferenceMatchLabel } from "@/lib/models";
 
 export const dynamic = "force-dynamic";
 
@@ -57,12 +58,13 @@ export default async function MatchesPage() {
                   <p className="text-sm text-fuchsia-300">{m.tagline}</p>
                 )}
                 {(() => {
-                  const matchCount = m.features.filter((mf) =>
-                    preferred.has(mf.feature.key)
-                  ).length;
+                  const matchCount = countPreferenceMatches(
+                    m.features.map((mf) => ({ key: mf.feature.key })),
+                    preferred
+                  );
                   return preferred.size > 0 && matchCount > 0 ? (
                     <p className="mt-1 text-xs font-semibold text-emerald-300">
-                      ✦ {matchCount} preference match{matchCount > 1 ? "es" : ""}
+                      ✦ {preferenceMatchLabel(matchCount)}
                     </p>
                   ) : null;
                 })()}

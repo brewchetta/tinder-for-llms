@@ -17,6 +17,9 @@ prisma/generated/
 out/
 dist/
 
+# TypeScript incremental build info
+*.tsbuildinfo
+
 # Logs / OS
 *.log
 .DS_Store

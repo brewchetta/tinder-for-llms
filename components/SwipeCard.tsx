@@ -13,6 +13,11 @@ import {
   type PanInfo,
 } from "framer-motion";
 import type { SwipeDirection } from "@/app/actions/swipe";
+import {
+  initials,
+  countPreferenceMatches,
+  preferenceMatchLabel,
+} from "@/lib/models";
 
 export type DeckFeature = {
   key: string;
@@ -49,15 +54,6 @@ const CATEGORY_STYLES: Record<string, string> = {
   CONTEXT: "bg-rose-500/15 text-rose-200 ring-rose-400/30",
 };
 
-function initials(name: string) {
-  return name
-    .split(/\s+/)
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-}
-
 type Props = {
   model: DeckModel;
   interactive: boolean;
@@ -71,7 +67,7 @@ export const SwipeCard = forwardRef<SwipeCardHandle, Props>(function SwipeCard(
   ref
 ) {
   const preferred = new Set(preferredKeys);
-  const matchCount = model.features.filter((f) => preferred.has(f.key)).length;
+  const matchCount = countPreferenceMatches(model.features, preferred);
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-300, 300], [-18, 18]);
   const likeOpacity = useTransform(x, [40, 140], [0, 1]);
@@ -153,7 +149,7 @@ export const SwipeCard = forwardRef<SwipeCardHandle, Props>(function SwipeCard(
             )}
             {preferredKeys.length > 0 && matchCount > 0 && (
               <p className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-emerald-400/15 px-2 py-0.5 text-xs font-semibold text-emerald-300 ring-1 ring-emerald-400/30">
-                ✦ {matchCount} preference match{matchCount > 1 ? "es" : ""}
+                ✦ {preferenceMatchLabel(matchCount)}
               </p>
             )}
           </div>
