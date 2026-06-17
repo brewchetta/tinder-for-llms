@@ -40,7 +40,7 @@ export function countPreferenceMatches(
  */
 export function preferenceMatchLabel(count: number): string | null {
   if (count <= 0) return null;
-  return `${count} preference match${count > 1 ? "es" : ""}`;
+  return `${count} preference match${count >= 1 ? "es" : ""}`;
 }
 
 /**
