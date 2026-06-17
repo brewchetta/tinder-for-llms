@@ -27,22 +27,26 @@ A Tinder-style app where users swipe through **LLM models** (cards) instead of p
 - **Server Actions** (`app/actions/swipe.ts`) record swipes and unmatches.
 - **Deck query**: show `AiModel`s the current user has NOT swiped yet.
 - **Matches** = the user's `Swipe` rows with `direction = RIGHT` (derived, no Match table).
+- **Preferences**: `UserPreference` rows (feature ids). Swipe cards & matches highlight
+  features whose `key` is in the user's preferred set and show a match count.
 
 ## Directory Layout
 ```
 app/page.tsx              # redirects to /swipe or /sign-in
 app/sign-in/page.tsx      # dev login (server action -> signIn)
 app/swipe/page.tsx        # deck (server component) -> <SwipeDeck>
-app/matches/page.tsx      # right-swiped models + Unmatch
+app/matches/page.tsx      # right-swiped models + Unmatch + pref highlight
+app/preferences/page.tsx  # pick desired features
 app/actions/swipe.ts      # 'use server' recordSwipe / unmatch
+app/actions/preferences.ts# 'use server' togglePreference
 app/api/auth/[...nextauth]/route.ts
 components/SwipeDeck.tsx   # client: stack state + optimistic swipe
-components/SwipeCard.tsx   # client: framer-motion draggable card (forwardRef.fly)
+components/SwipeCard.tsx   # client: framer-motion draggable card (forwardRef.fly) + pref highlight
+components/PreferenceChips.tsx # client: optimistic toggle chips
 components/Nav.tsx         # server: session-aware nav + sign out
 lib/prisma.ts  lib/auth.ts  types/next-auth.d.ts
 prisma/schema.prisma  prisma/seed.ts
 ```
-(Phase 2 will add `app/preferences/`.)
 
 ## Data Models
 Auth.js tables: `User`, `Account`, `Session`, `VerificationToken`.
@@ -105,5 +109,5 @@ generated diagram will then show enum boxes too.
 1. ✅ Scaffold Next.js + Prisma + Auth.js; schema + seed.
 2. ✅ Swipe deck UI + record swipes.
 3. ✅ Matches list (with unmatch).
-4. Phase 2: user preferences + per-card preference highlighting.
+4. ✅ Phase 2: user preferences + per-card preference highlighting.
 5. Migrate to Supabase.

@@ -11,11 +11,18 @@ export default async function SwipePage() {
   const session = await auth();
   if (!session?.user) redirect("/sign-in");
 
-  const swiped = await prisma.swipe.findMany({
-    where: { userId: session.user.id },
-    select: { aiModelId: true },
-  });
+  const [swiped, prefs] = await Promise.all([
+    prisma.swipe.findMany({
+      where: { userId: session.user.id },
+      select: { aiModelId: true },
+    }),
+    prisma.userPreference.findMany({
+      where: { userId: session.user.id },
+      include: { feature: true },
+    }),
+  ]);
   const swipedIds = swiped.map((s) => s.aiModelId);
+  const preferredKeys = prefs.map((p) => p.feature.key);
 
   const models = await prisma.aiModel.findMany({
     where: { id: { notIn: swipedIds } },
@@ -43,8 +50,16 @@ export default async function SwipePage() {
   }));
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center">
-      <SwipeDeck models={deck} />
+    <div className="flex flex-1 flex-col items-center justify-center gap-4">
+      {preferredKeys.length === 0 && (
+        <a
+          href="/preferences"
+          className="rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs text-zinc-300 hover:bg-white/10"
+        >
+          ✦ Set your preferences to highlight matching features →
+        </a>
+      )}
+      <SwipeDeck models={deck} preferredKeys={preferredKeys} />
     </div>
   );
 }

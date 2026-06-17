@@ -9,11 +9,18 @@ export default async function MatchesPage() {
   const session = await auth();
   if (!session?.user) redirect("/sign-in");
 
-  const matches = await prisma.swipe.findMany({
-    where: { userId: session.user.id, direction: "RIGHT" },
-    include: { aiModel: { include: { features: { include: { feature: true } } } } },
-    orderBy: { createdAt: "desc" },
-  });
+  const [matches, prefs] = await Promise.all([
+    prisma.swipe.findMany({
+      where: { userId: session.user.id, direction: "RIGHT" },
+      include: { aiModel: { include: { features: { include: { feature: true } } } } },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.userPreference.findMany({
+      where: { userId: session.user.id },
+      include: { feature: true },
+    }),
+  ]);
+  const preferred = new Set(prefs.map((p) => p.feature.key));
 
   return (
     <div className="flex flex-col gap-6">
@@ -49,15 +56,33 @@ export default async function MatchesPage() {
                 {m.tagline && (
                   <p className="text-sm text-fuchsia-300">{m.tagline}</p>
                 )}
+                {(() => {
+                  const matchCount = m.features.filter((mf) =>
+                    preferred.has(mf.feature.key)
+                  ).length;
+                  return preferred.size > 0 && matchCount > 0 ? (
+                    <p className="mt-1 text-xs font-semibold text-emerald-300">
+                      ✦ {matchCount} preference match{matchCount > 1 ? "es" : ""}
+                    </p>
+                  ) : null;
+                })()}
                 <div className="mt-2 flex flex-wrap gap-1.5">
-                  {m.features.map((mf) => (
-                    <span
-                      key={mf.feature.key}
-                      className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-zinc-200 ring-1 ring-white/15"
-                    >
-                      {mf.feature.label}
-                    </span>
-                  ))}
+                  {m.features.map((mf) => {
+                    const isPref = preferred.has(mf.feature.key);
+                    return (
+                      <span
+                        key={mf.feature.key}
+                        className={`rounded-full px-2 py-0.5 text-xs ring-1 ${
+                          isPref
+                            ? "bg-emerald-400/25 text-emerald-50 ring-2 ring-emerald-400"
+                            : "bg-white/10 text-zinc-200 ring-white/15"
+                        }`}
+                      >
+                        {isPref ? "✓ " : ""}
+                        {mf.feature.label}
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
 

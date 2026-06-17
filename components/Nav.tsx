@@ -19,6 +19,9 @@ export async function Nav() {
             <Link href="/matches" className="text-zinc-300 hover:text-white">
               Matches
             </Link>
+            <Link href="/preferences" className="text-zinc-300 hover:text-white">
+              Preferences
+            </Link>
             <span className="hidden text-zinc-500 sm:inline">
               {session.user.email}
             </span>

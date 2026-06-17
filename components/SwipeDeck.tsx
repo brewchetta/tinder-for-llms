@@ -8,7 +8,13 @@ import {
   type SwipeCardHandle,
 } from "@/components/SwipeCard";
 
-export function SwipeDeck({ models }: { models: DeckModel[] }) {
+export function SwipeDeck({
+  models,
+  preferredKeys,
+}: {
+  models: DeckModel[];
+  preferredKeys: string[];
+}) {
   const [cards, setCards] = useState<DeckModel[]>(models);
   const [, startTransition] = useTransition();
   const topRef = useRef<SwipeCardHandle>(null);
@@ -54,6 +60,7 @@ export function SwipeDeck({ models }: { models: DeckModel[] }) {
             model={model}
             interactive={i === 0}
             offset={i}
+            preferredKeys={preferredKeys}
             onDecision={(dir) => commit(model, dir)}
           />
         ))}

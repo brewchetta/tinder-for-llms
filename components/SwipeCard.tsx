@@ -62,13 +62,16 @@ type Props = {
   model: DeckModel;
   interactive: boolean;
   offset: number;
+  preferredKeys: string[];
   onDecision: (direction: SwipeDirection) => void;
 };
 
 export const SwipeCard = forwardRef<SwipeCardHandle, Props>(function SwipeCard(
-  { model, interactive, offset, onDecision },
+  { model, interactive, offset, preferredKeys, onDecision },
   ref
 ) {
+  const preferred = new Set(preferredKeys);
+  const matchCount = model.features.filter((f) => preferred.has(f.key)).length;
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-300, 300], [-18, 18]);
   const likeOpacity = useTransform(x, [40, 140], [0, 1]);
@@ -148,6 +151,11 @@ export const SwipeCard = forwardRef<SwipeCardHandle, Props>(function SwipeCard(
             {model.tagline && (
               <p className="mt-1 text-sm text-fuchsia-300">{model.tagline}</p>
             )}
+            {preferredKeys.length > 0 && matchCount > 0 && (
+              <p className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-emerald-400/15 px-2 py-0.5 text-xs font-semibold text-emerald-300 ring-1 ring-emerald-400/30">
+                ✦ {matchCount} preference match{matchCount > 1 ? "es" : ""}
+              </p>
+            )}
           </div>
 
           {model.description && (
@@ -171,17 +179,23 @@ export const SwipeCard = forwardRef<SwipeCardHandle, Props>(function SwipeCard(
 
           {model.features.length > 0 && (
             <div className="mt-auto flex flex-wrap gap-1.5 pt-2">
-              {model.features.map((f) => (
-                <span
-                  key={f.key}
-                  className={`rounded-full px-2.5 py-1 text-xs font-medium ring-1 ${
-                    CATEGORY_STYLES[f.category] ??
-                    "bg-white/10 text-zinc-200 ring-white/20"
-                  }`}
-                >
-                  {f.label}
-                </span>
-              ))}
+              {model.features.map((f) => {
+                const isPref = preferred.has(f.key);
+                return (
+                  <span
+                    key={f.key}
+                    className={`rounded-full px-2.5 py-1 text-xs font-medium ring-1 ${
+                      isPref
+                        ? "bg-emerald-400/25 text-emerald-50 ring-2 ring-emerald-400"
+                        : CATEGORY_STYLES[f.category] ??
+                          "bg-white/10 text-zinc-200 ring-white/20"
+                    }`}
+                  >
+                    {isPref ? "✓ " : ""}
+                    {f.label}
+                  </span>
+                );
+              })}
             </div>
           )}
         </div>
