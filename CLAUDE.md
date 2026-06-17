@@ -105,6 +105,22 @@ direct URLs, Postgres init migration in `prisma/migrations/`). To stand up a dat
 follow **`SUPABASE.md`** (create project → fill `.env` → `prisma migrate deploy` → seed).
 RLS is deferred; every query is already scoped to the session user via Prisma.
 
+## Deployment (Vercel)
+Deployed via the Vercel ↔ GitHub integration (repo
+`github.com/brewchetta/tinder-for-llms`); every push to `main` triggers a build.
+- **Prisma on Vercel**: dependencies are cached, so `prisma generate` must run each
+  build. It's wired into both the `build` script (`prisma generate && next build`)
+  and `postinstall`.
+- **Env vars** (set in Vercel → Settings → Environment Variables): `DATABASE_URL`
+  (pooled, :6543), `DIRECT_URL` (:5432), `AUTH_SECRET`, and optionally
+  `AUTH_GOOGLE_ID`/`AUTH_GOOGLE_SECRET`. No `AUTH_URL` needed — `lib/auth.ts` sets
+  `trustHost: true`, so NextAuth auto-detects the Vercel host.
+- **DB**: prod shares the same Supabase DB (already migrated + seeded); no migration
+  step runs on deploy.
+- **Google OAuth**: after the first deploy, add the prod redirect URI
+  `https://<domain>/api/auth/callback/google` in Google Cloud Console (see
+  `GOOGLE_OAUTH.md`), else Google sign-in returns `redirect_uri_mismatch`.
+
 ## Roadmap
 1. ✅ Scaffold Next.js + Prisma + Auth.js; schema + seed.
 2. ✅ Swipe deck UI + record swipes.
@@ -112,3 +128,4 @@ RLS is deferred; every query is already scoped to the session user via Prisma.
 4. ✅ Phase 2: user preferences + per-card preference highlighting.
 5. ✅ Migrate to Supabase — Postgres + real enums; migration deployed and seeded.
 6. ✅ Google OAuth sign-in (alongside dev login).
+7. ✅ Deploy to Vercel (GitHub integration, auto-deploy on push to `main`).
