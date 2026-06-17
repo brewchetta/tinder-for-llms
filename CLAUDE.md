@@ -36,7 +36,7 @@ A Tinder-style app where users swipe through **LLM models** (cards) instead of p
 ## Directory Layout
 ```
 app/page.tsx              # redirects to /swipe or /sign-in
-app/sign-in/page.tsx      # dev login (server action -> signIn)
+app/sign-in/page.tsx      # Google OAuth + dev login (server actions -> signIn)
 app/swipe/page.tsx        # deck (server component) -> <SwipeDeck>
 app/matches/page.tsx      # right-swiped models + Unmatch + pref highlight
 app/preferences/page.tsx  # pick desired features
@@ -78,6 +78,7 @@ Auth.js tables: `User`, `Account`, `Session`, `VerificationToken`.
 3. `npx prisma migrate deploy` — apply the migrations to your Postgres DB
 4. `npm run db:seed` — load the LLM catalog (9 models, 16 features)
 5. `npm run dev` → http://localhost:3000 — sign in with any email
+6. *(optional)* Google sign-in: set `AUTH_GOOGLE_ID`/`AUTH_GOOGLE_SECRET` — see `GOOGLE_OAUTH.md`.
 
 ## Commands
 - `npm run dev` / `npm run build` / `npm start` — Next.js
@@ -109,4 +110,5 @@ RLS is deferred; every query is already scoped to the session user via Prisma.
 2. ✅ Swipe deck UI + record swipes.
 3. ✅ Matches list (with unmatch).
 4. ✅ Phase 2: user preferences + per-card preference highlighting.
-5. 🔄 Migrate to Supabase — code migrated to Postgres; run `SUPABASE.md` to deploy a DB.
+5. ✅ Migrate to Supabase — Postgres + real enums; migration deployed and seeded.
+6. ✅ Google OAuth sign-in (alongside dev login).
